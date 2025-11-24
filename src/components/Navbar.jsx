@@ -1,16 +1,28 @@
-import { Link } from 'react-router-dom';
-import { Menu, X, Home, PenSquare, LogIn } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Menu, X, Home, PenSquare, LogIn, LogOut, User } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error("Failed to log out:", error);
+    }
+  };
 
   return (
     <nav className="bg-red-700 text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="text-2xl font-bold cursor-pointer">
+          <Link to="/" className="text-2xl font-bold cursor-pointer hover:text-red-100 transition">
             The Kop Stories
           </Link>
 
@@ -18,14 +30,32 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-4">
             <NavItem to="/" icon={<Home size={20} />} label="Home" />
             <NavItem to="/feed" icon={<PenSquare size={20} />} label="Stories" />
-            <NavItem to="/login" icon={<LogIn size={20} />} label="Login" />
-
-            <Link
-              to="/signup"
-              className="bg-white text-red-700 px-4 py-2 rounded font-semibold hover:bg-gray-100 transition"
-            >
-              Sign Up
-            </Link>
+            
+            {currentUser ? (
+              <>
+                <div className="flex items-center space-x-2 px-3 py-2 text-red-100">
+                  <User size={20} />
+                  <span className="text-sm">{currentUser.displayName || currentUser.email}</span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center space-x-2 hover:bg-red-800 px-3 py-2 rounded transition"
+                >
+                  <LogOut size={20} />
+                  <span>Logout</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <NavItem to="/login" icon={<LogIn size={20} />} label="Login" />
+                <Link
+                  to="/signup"
+                  className="bg-white text-red-700 px-4 py-2 rounded font-semibold hover:bg-gray-100 transition"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -37,17 +67,38 @@ export default function Navbar() {
         {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden pb-4 space-y-2">
-            <MobileItem to="/" label="Home" icon={<Home size={20} />} />
-            <MobileItem to="/feed" label="Stories" icon={<PenSquare size={20} />} />
-            <MobileItem to="/login" label="Login" icon={<LogIn size={20} />} />
+            <MobileItem to="/" label="Home" icon={<Home size={20} />} onClick={() => setIsMenuOpen(false)} />
+            <MobileItem to="/feed" label="Stories" icon={<PenSquare size={20} />} onClick={() => setIsMenuOpen(false)} />
 
-            <Link
-              to="/signup"
-              className="block w-full text-left px-3 py-2 bg-white text-red-700 rounded font-semibold"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Sign Up
-            </Link>
+            {currentUser ? (
+              <>
+                <div className="px-3 py-2 text-red-100 flex items-center space-x-2">
+                  <User size={20} />
+                  <span className="text-sm">{currentUser.displayName || currentUser.email}</span>
+                </div>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-red-800 rounded flex items-center space-x-2"
+                >
+                  <LogOut size={20} />
+                  <span>Logout</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <MobileItem to="/login" label="Login" icon={<LogIn size={20} />} onClick={() => setIsMenuOpen(false)} />
+                <Link
+                  to="/signup"
+                  className="block w-full text-left px-3 py-2 bg-white text-red-700 rounded font-semibold"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -67,10 +118,11 @@ function NavItem({ to, icon, label }) {
   );
 }
 
-function MobileItem({ to, icon, label }) {
+function MobileItem({ to, icon, label, onClick }) {
   return (
     <Link
       to={to}
+      onClick={onClick}
       className="w-full flex items-center space-x-2 px-3 py-2 hover:bg-red-800 rounded"
     >
       {icon}
